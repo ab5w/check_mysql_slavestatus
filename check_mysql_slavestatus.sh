@@ -5,7 +5,7 @@
 # Purpose: Monitor MySQL Replication status with Nagios                 #
 # Description: Connects to given MySQL hosts and checks for running     #
 # SLAVE state and delivers additional info                              #
-# Original:	This script is a modified version of                        #
+# Original: This script is a modified version of                        #
 # check mysql slave sql running written by dhirajt                      #
 # Thanks to: Victor Balada Diaz for his ideas added on 20080930         #
 # Soren Klintrup for stuff added on 20081015                            #
@@ -13,8 +13,8 @@
 # Peter Lecki for his mods added on 20120803                            #
 # History:                                                              #
 # 2008041700 Original Script modified                                   #
-# 2008041701 Added additional info if status OK	                        #
-# 2008041702 Added usage of script with params -H -u -p	                #
+# 2008041701 Added additional info if status OK                         #
+# 2008041702 Added usage of script with params -H -u -p                 #
 # 2008041703 Added bindir variable for multiple platforms               #
 # 2008041704 Added help because mankind needs help                      #
 # 2008093000 Using /bin/sh instead of /bin/bash                         #
