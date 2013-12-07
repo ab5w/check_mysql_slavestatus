@@ -1,16 +1,16 @@
 #!/bin/bash
 #########################################################################
-# Script:	check_mysql_slavestatus.sh                              #
-# Author:	Claudio Kuenzler www.claudiokuenzler.com                #
-# Purpose:	Monitor MySQL Replication status with Nagios            #
+# Script:	check_mysql_slavestatus.sh                                  #
+# Author:	Claudio Kuenzler www.claudiokuenzler.com                    #
+# Purpose:	Monitor MySQL Replication status with Nagios                #
 # Description:	Connects to given MySQL hosts and checks for running    #
-#		SLAVE state and delivers additional info                #
-# Original:	This script is a modified version of                    #
-#		check mysql slave sql running written by dhirajt        #
+#		SLAVE state and delivers additional info                        #
+# Original:	This script is a modified version of                        #
+#		check mysql slave sql running written by dhirajt                #
 # Thanks to:	Victor Balada Diaz for his ideas added on 20080930      #
-#		Soren Klintrup for stuff added on 20081015              #
-#		Marc Feret for Slave_IO_Running check 20111227          #
-#		Peter Lecki for his mods added on 20120803              #
+#		Soren Klintrup for stuff added on 20081015                      #
+#		Marc Feret for Slave_IO_Running check 20111227                  #
+#		Peter Lecki for his mods added on 20120803                      #
 # History:                                                              #
 # 2008041700 Original Script modified                                   #
 # 2008041701 Added additional info if status OK	                        #
@@ -55,62 +55,77 @@ Usage: check_mysql_slavestatus.sh -H host -P port -u username -p password [-w in
 Options:\n-H Hostname or IP of slave server\n-P Port of slave server\n-u Username of DB-user\n-p Password of DB-user\n-w Delay in seconds for Warning status (optional)\n-c Delay in seconds for Critical status (optional)\n
 Attention: The DB-user you type in must have CLIENT REPLICATION rights on the DB-server. Example:\n\tGRANT REPLICATION CLIENT on *.* TO 'nagios'@'%' IDENTIFIED BY 'secret';"
 
-STATE_OK=0		# define the exit code if status is OK
-STATE_WARNING=1		# define the exit code if status is Warning (not really used)
-STATE_CRITICAL=2	# define the exit code if status is Critical
-STATE_UNKNOWN=3		# define the exit code if status is Unknown
 export PATH=$PATH:/usr/local/bin:/usr/bin:/bin # Set path
-crit="No"		# what is the answer of MySQL Slave_SQL_Running for a Critical status?
-ok="Yes"		# what is the answer of MySQL Slave_SQL_Running for an OK status?
+STATE_OK=0		                               # define the exit code if status is OK
+STATE_WARNING=1		                           # define the exit code if status is Warning (not really used)
+STATE_CRITICAL=2	                           # define the exit code if status is Critical
+STATE_UNKNOWN=3		                           # define the exit code if status is Unknown
+crit="No"		                               # what is the answer of MySQL Slave_SQL_Running for a Critical status?
+ok="Yes"		                               # what is the answer of MySQL Slave_SQL_Running for an OK status?
 
-for cmd in mysql awk grep [ 
-do
- if ! `which ${cmd} &>/dev/null`
- then
-  echo "UNKNOWN: This script requires the command '${cmd}' but it does not exist; please check if command exists and PATH is correct"
-  exit ${STATE_UNKNOWN}
- fi
+for cmd in mysql awk grep [; do
+
+    if ! `which ${cmd} &>/dev/null`; then
+
+        echo "UNKNOWN: This script requires the command '${cmd}' but it does not exist; please check if command exists and PATH is correct"
+        exit ${STATE_UNKNOWN}
+    
+    fi
+
 done
 
 # Check for people who need help - aren't we all nice ;-)
 #########################################################################
-if [ "${1}" = "--help" -o "${#}" = "0" ]; 
-	then 
-	echo -e "${help}";
-	exit 1;
+
+if [ "${1}" = "--help" -o "${#}" = "0" ]; then 
+
+    echo -e "${help}";
+    exit 1;
+
 fi
 
 # Important given variables for the DB-Connect
 #########################################################################
-while getopts "H:P:u:p:w:c:h" Input;
-do
-	case ${Input} in
-	H)	host=${OPTARG};;
-	P)	port=${OPTARG};;
-	u)	user=${OPTARG};;
-	p)	password=${OPTARG};;
-	w)      warn_delay=${OPTARG};;
-	c)      crit_delay=${OPTARG};;
-	h)      echo -e "${help}"; exit 1;;
-	\?)	echo "Wrong option given. Please use options -H for host, -P for port, -u for user and -p for password"
-		exit 1
-		;;
-	esac
+
+while getopts "H:P:u:p:w:c:h" Input; do
+
+    case ${Input} in
+    H)	host=${OPTARG};;
+    P)	port=${OPTARG};;
+    u)	user=${OPTARG};;
+    p)	password=${OPTARG};;
+    w)      warn_delay=${OPTARG};;
+    c)      crit_delay=${OPTARG};;
+    h)      echo -e "${help}"; exit 1;;
+    \?)	echo "Wrong option given. Please use options -H for host, -P for port, -u for user and -p for password"
+    exit 1
+    ;;
+    esac
+
 done
 
 # Connect to the DB server and check for informations
 #########################################################################
 # Check whether all required arguments were passed in
-if [ -z "${host}" -o -z "${port}" -o -z "${user}" -o -z "${password}" ];then
-	echo -e "${help}"
-	exit ${STATE_UNKNOWN}
+
+if [ -z "${host}" -o -z "${port}" -o -z "${user}" -o -z "${password}" ]; then
+
+    echo -e "${help}"
+    exit ${STATE_UNKNOWN}
+
 fi
+
 # Connect to the DB server and store output in vars
+
 ConnectionResult=`mysql -h ${host} -P ${port} -u ${user} --password=${password} -e 'show slave status\G' 2>&1`
+
 if [ -z "`echo "${ConnectionResult}" |grep Slave_IO_State`" ]; then
-	echo -e "CRITICAL: Unable to connect to server ${host}:${port} with username '${user}' and given password"
-	exit ${STATE_CRITICAL}
+	
+    echo -e "CRITICAL: Unable to connect to server ${host}:${port} with username '${user}' and given password"
+    exit ${STATE_CRITICAL}
+
 fi
+
 check=`echo "${ConnectionResult}" |grep Slave_SQL_Running | awk '{print $2}'`
 checkio=`echo "${ConnectionResult}" |grep Slave_IO_Running | awk '{print $2}'`
 masterinfo=`echo "${ConnectionResult}" |grep  Master_Host | awk '{print $2}'`
@@ -118,41 +133,87 @@ delayinfo=`echo "${ConnectionResult}" |grep Seconds_Behind_Master | awk '{print 
 
 # Output of different exit states
 #########################################################################
+
 if [ ${check} = "NULL" ]; then 
-echo "CRITICAL: Slave_SQL_Running is answering NULL"; exit ${STATE_CRITICAL};
+
+    echo "CRITICAL: Slave_SQL_Running is answering NULL"; exit ${STATE_CRITICAL};
+
 fi
 
 if [ ${check} = ${crit} ]; then 
-echo "CRITICAL: ${host}:${port} Slave_SQL_Running: ${check}"; exit ${STATE_CRITICAL};
+
+    echo "CRITICAL: ${host}:${port} Slave_SQL_Running: ${check}"; exit ${STATE_CRITICAL};
+
 fi
 
 if [ ${checkio} = ${crit} ]; then 
-echo "CRITICAL: ${host} Slave_IO_Running: ${checkio}"; exit ${STATE_CRITICAL};
+
+    echo "CRITICAL: ${host} Slave_IO_Running: ${checkio}"; exit ${STATE_CRITICAL};
+
 fi
 
 if [ ${checkio} = "Connecting" ]; then 
-echo "CRITICAL: ${host} Slave_IO_Running: ${checkio}"; exit ${STATE_CRITICAL};
+
+    echo "CRITICAL: ${host} Slave_IO_Running: ${checkio}"; exit ${STATE_CRITICAL};
+
 fi
 
 if [ ${check} = ${ok} ] && [ ${checkio} = ${ok} ]; then
- # Delay thresholds are set
- if [[ -n ${warn_delay} ]] && [[ -n ${crit_delay} ]]; then
-  if ! [[ ${warn_delay} -gt 0 ]]; then echo "Warning threshold must be a valid integer greater than 0"; exit $STATE_UNKNOWN; fi
-  if ! [[ ${crit_delay} -gt 0 ]]; then echo "Warning threshold must be a valid integer greater than 0"; exit $STATE_UNKNOWN; fi
-  if [[ -z ${warn_delay} ]] || [[ -z ${crit_delay} ]]; then echo "Both warning and critical thresholds must be set"; exit $STATE_UNKNOWN; fi
-  if [[ ${warn_delay} -gt ${crit_delay} ]]; then echo "Warning threshold cannot be greater than critical"; exit $STATE_UNKNOWN; fi
 
-  if [[ ${delayinfo} -ge ${crit_delay} ]]
-  then echo "CRITICAL: Slave is ${delayinfo} seconds behind Master | delay=${delayinfo}s"; exit ${STATE_CRITICAL}
-  elif [[ ${delayinfo} -ge ${warn_delay} ]]
-  then echo "WARNING: Slave is ${delayinfo} seconds behind Master | delay=${delayinfo}s"; exit ${STATE_WARNING}
-  else echo "OK: Slave SQL running: ${check} Slave IO running: ${checkio} / master: ${masterinfo} / slave is ${delayinfo} seconds behind master | delay=${delayinfo}s"; exit ${STATE_OK};
-  fi
- else
- # Without delay thresholds
- echo "OK: Slave SQL running: ${check} Slave IO running: ${checkio} / master: ${masterinfo} / slave is ${delayinfo} seconds behind master | delay=${delayinfo}s"
- exit ${STATE_OK};
- fi
+    # Delay thresholds are set
+    
+    if [[ -n ${warn_delay} ]] && [[ -n ${crit_delay} ]]; then
+
+        if ! [[ ${warn_delay} -gt 0 ]]; then 
+
+    	    echo "Warning threshold must be a valid integer greater than 0"; exit $STATE_UNKNOWN;
+
+        fi
+
+        if ! [[ ${crit_delay} -gt 0 ]]; then 
+
+    	    echo "Warning threshold must be a valid integer greater than 0"; exit $STATE_UNKNOWN;
+
+        fi
+
+        if [[ -z ${warn_delay} ]] || [[ -z ${crit_delay} ]]; then 
+
+            echo "Both warning and critical thresholds must be set"; exit $STATE_UNKNOWN; 
+
+        fi
+
+        if [[ ${warn_delay} -gt ${crit_delay} ]]; then 
+
+    	    echo "Warning threshold cannot be greater than critical"; 
+    	    exit $STATE_UNKNOWN; 
+
+        fi
+
+        if [[ ${delayinfo} -ge ${crit_delay} ]]; then 
+
+    	    echo "CRITICAL: Slave is ${delayinfo} seconds behind Master | delay=${delayinfo}s"; 
+    	    exit ${STATE_CRITICAL}
+
+        elif [[ ${delayinfo} -ge ${warn_delay} ]]; then 
+
+    	    echo "WARNING: Slave is ${delayinfo} seconds behind Master | delay=${delayinfo}s"; 
+    	    exit ${STATE_WARNING}
+  
+        else 
+
+            echo "OK: Slave SQL running: ${check} Slave IO running: ${checkio} / master: ${masterinfo} / slave is ${delayinfo} seconds behind master | delay=${delayinfo}s"; 
+  	        exit ${STATE_OK};
+
+        fi
+
+    else
+        
+        # Without delay thresholds
+        echo "OK: Slave SQL running: ${check} Slave IO running: ${checkio} / master: ${masterinfo} / slave is ${delayinfo} seconds behind master | delay=${delayinfo}s"
+        exit ${STATE_OK};
+    
+    fi
+
 fi
 
 echo "UNKNOWN: should never reach this part (Slave_SQL_Running is ${check}, Slave_IO_Running is ${checkio})"
